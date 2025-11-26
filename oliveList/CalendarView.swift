@@ -24,7 +24,7 @@ struct OliveCalendarView: View {
 
     private var days: [MonthGridDay] {
         let calendar = Calendar.current
-        let range = calendar.range(of: .day, in: .month, for: displayMonth) ?? 1...30
+        let range = calendar.range(of: .day, in: .month, for: displayMonth) ?? 1..<31
         let firstDay = calendar.date(from: calendar.dateComponents([.year, .month], from: displayMonth)) ?? displayMonth
         let offset = calendar.component(.weekday, from: firstDay) - calendar.firstWeekday
         let leading = offset < 0 ? offset + 7 : offset
