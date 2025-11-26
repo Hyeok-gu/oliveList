@@ -10,6 +10,7 @@ struct OliveCalendarView: View {
     @EnvironmentObject var store: OliveStore
     @Binding var selectedDate: Date
     @Binding var monthOffset: Int
+    @State private var swipeDirection: Edge = .trailing
 
     private var displayMonth: Date {
         Calendar.current.date(byAdding: .month, value: monthOffset, to: Date()) ?? Date()
@@ -45,16 +46,25 @@ struct OliveCalendarView: View {
                     .font(.title3.bold())
                 Spacer()
                 HStack(spacing: 12) {
-                    Button(action: { monthOffset -= 1 }) {
+                    Button(action: {
+                        swipeDirection = .leading
+                        withAnimation(.easeInOut) { monthOffset -= 1 }
+                    }) {
                         Image(systemName: "chevron.left")
                             .padding(8)
                             .background(Circle().fill(Color(.systemGray5)))
                     }
-                    Button(action: { monthOffset = 0 }) {
+                    Button(action: {
+                        swipeDirection = .trailing
+                        withAnimation(.easeInOut) { monthOffset = 0 }
+                    }) {
                         Text("오늘")
                             .font(.callout.weight(.semibold))
                     }
-                    Button(action: { monthOffset += 1 }) {
+                    Button(action: {
+                        swipeDirection = .trailing
+                        withAnimation(.easeInOut) { monthOffset += 1 }
+                    }) {
                         Image(systemName: "chevron.right")
                             .padding(8)
                             .background(Circle().fill(Color(.systemGray5)))
@@ -63,34 +73,17 @@ struct OliveCalendarView: View {
                 .buttonStyle(.plain)
             }
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 7), spacing: 12) {
-                ForEach(days) { day in
-                    if let date = day.date {
-                        Button {
-                            selectedDate = date
-                        } label: {
-                            VStack(spacing: 6) {
-                                Text("\(Calendar.current.component(.day, from: date))")
-                                    .font(.headline)
-                                    .foregroundColor(day.isToday ? .orange : .primary)
-                                Circle()
-                                    .fill(store.statusColor(for: date) ?? Color.clear)
-                                    .frame(width: 8, height: 8)
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 48)
-                            .padding(6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(date.stripTime() == selectedDate.stripTime() ? Color(.systemGray6) : Color.clear)
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    } else {
-                        Spacer().frame(height: 48)
-                    }
-                }
+            ZStack {
+                monthGrid
+                    .id(displayMonth)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: swipeDirection == .leading ? .leading : .trailing),
+                        removal: .move(edge: swipeDirection == .leading ? .trailing : .leading)
+                    ))
             }
+            .animation(.easeInOut, value: monthOffset)
         }
+        .frame(height: 360)
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
@@ -99,11 +92,43 @@ struct OliveCalendarView: View {
         .gesture(DragGesture(minimumDistance: 20)
             .onEnded { value in
                 if value.translation.width < -40 {
-                    monthOffset += 1
+                    swipeDirection = .trailing
+                    withAnimation(.easeInOut) { monthOffset += 1 }
                 } else if value.translation.width > 40 {
-                    monthOffset -= 1
+                    swipeDirection = .leading
+                    withAnimation(.easeInOut) { monthOffset -= 1 }
                 }
             }
         )
+    }
+
+    private var monthGrid: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 7), spacing: 12) {
+            ForEach(days) { day in
+                if let date = day.date {
+                    Button {
+                        selectedDate = date
+                    } label: {
+                        VStack(spacing: 6) {
+                            Text("\(Calendar.current.component(.day, from: date))")
+                                .font(.headline)
+                                .foregroundColor(day.isToday ? .orange : .primary)
+                            Circle()
+                                .fill(store.statusColor(for: date) ?? Color.clear)
+                                .frame(width: 8, height: 8)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .padding(6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(date.stripTime() == selectedDate.stripTime() ? Color(.systemGray6) : Color.clear)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Spacer().frame(height: 48)
+                }
+            }
+        }
     }
 }
