@@ -1,22 +1,29 @@
-//
-//  ContentView.swift
-//  oliveList
-//
-//  Created by Daehyeok MacBook on 11/26/25.
-//
-
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var store = OliveStore()
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-            Text("And, publish")
+        TabView {
+            MainDashboardView()
+                .environmentObject(store)
+                .tabItem {
+                    Label("홈", systemImage: "calendar")
+                }
+
+            DayDetailView(date: Date())
+                .environmentObject(store)
+                .tabItem {
+                    Label("Today", systemImage: "list.bullet")
+                }
+
+            MyPageView()
+                .environmentObject(store)
+                .tabItem {
+                    Label("마이", systemImage: "person.crop.circle")
+                }
         }
-        .padding()
+        .accentColor(store.selectedTheme.oliveColor)
     }
 }
 
